@@ -99,7 +99,7 @@ async def create_application(session: AsyncSession, payload: ApplicationCreate) 
 async def put_application(session: AsyncSession, app_id: int, payload: ApplicationPut) -> Application:
     existing = await get_application_or_404(session, app_id)
 
-    # Business rules (same idea as POST /applications):
+    # Business rules
     await ensure_candidate_exists(session, payload.candidate_id)
     await ensure_job_exists_and_open(session, payload.job_id)
     await ensure_no_duplicate_except_self(session, payload.candidate_id, payload.job_id, existing.id)

@@ -1,6 +1,5 @@
 from sqlmodel import SQLModel
 
-# важно импортировать models, чтобы SQLModel "увидел" таблицы
 import src.candidates.models  # noqa
 import src.companies.models   # noqa
 import src.jobs.models        # noqa

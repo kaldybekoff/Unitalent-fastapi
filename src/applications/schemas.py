@@ -13,7 +13,6 @@ class ApplicationCreate(SQLModel):
 
 
 class ApplicationPut(SQLModel):
-    # PUT = replace (полная замена данных заявки)
     candidate_id: int = Field(gt=0)
     job_id: int = Field(gt=0)
     status: ApplicationStatus

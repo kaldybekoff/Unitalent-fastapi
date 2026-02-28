@@ -5,7 +5,6 @@ from sqlmodel import SQLModel, Field
 
 
 def to_naive_utc(dt: datetime) -> datetime:
-    # Если datetime с таймзоной (например "Z") -> переводим в UTC и делаем naive
     if dt.tzinfo is None:
         return dt
     return dt.astimezone(timezone.utc).replace(tzinfo=None)
@@ -27,7 +26,6 @@ class InterviewCreate(SQLModel):
 
 
 class InterviewPut(SQLModel):
-    # PUT = replace (полная замена)
     application_id: int = Field(gt=0)
     scheduled_at: datetime
     mode: str = Field(max_length=20)

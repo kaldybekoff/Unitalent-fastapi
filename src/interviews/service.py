@@ -50,7 +50,6 @@ async def create_interview(session: AsyncSession, payload: InterviewCreate) -> I
 async def put_interview(session: AsyncSession, interview_id: int, payload: InterviewPut) -> Interview:
     existing = await get_interview_or_404(session, interview_id)
 
-    # PUT меняет всё, включая связь
     await ensure_application_exists(session, payload.application_id)
 
     existing.application_id = payload.application_id
@@ -75,7 +74,6 @@ async def patch_interview(session: AsyncSession, interview_id: int, payload: Int
     if not data:
         raise HTTPException(status_code=400, detail="At least one field must be provided for update")
 
-    # если меняют application_id — проверяем существование
     if "application_id" in data and data["application_id"] is not None:
         await ensure_application_exists(session, data["application_id"])
 
