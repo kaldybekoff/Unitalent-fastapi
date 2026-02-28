@@ -1,4 +1,4 @@
-# Assignment 3 — UniTalent Recruitment API (FastAPI + Neon)
+# UniTalent Recruitment API (FastAPI + Neon)
 
 ## 1) Project overview
 UniTalent Recruitment API is a REST service for a recruitment workflow:
