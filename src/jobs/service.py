@@ -57,7 +57,7 @@ async def create_job(session: AsyncSession, payload: JobCreate) -> Job:
     session.add(job)
     await session.commit()
     await session.refresh(job)
-    return job
+    return job  
 
 
 async def put_job(session: AsyncSession, job_id: int, payload: JobCreate) -> Job:
