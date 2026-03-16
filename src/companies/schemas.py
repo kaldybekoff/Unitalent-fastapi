@@ -16,6 +16,7 @@ class CompanyUpdate(SQLModel):
 
 class CompanyRead(SQLModel):
     id: int
+    owner_id: int
     name: str
     industry: str | None
     website: str | None

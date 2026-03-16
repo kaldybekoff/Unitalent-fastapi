@@ -14,7 +14,7 @@ class Job(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     title: str = Field(min_length=1, max_length=200, index=True)
-    location: str | None = Field(default=None, max_length=200)
+    location: str | None = Field(default=None, max_length=200, index=True)
     description: str = Field(min_length=1, max_length=5000)
     is_open: bool = Field(default=True, index=True)
 

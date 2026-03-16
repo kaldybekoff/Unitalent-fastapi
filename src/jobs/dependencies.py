@@ -2,6 +2,7 @@ from fastapi import Depends, Path
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.session import get_session
+
 from .models import Job
 from .service import get_job_or_404
 

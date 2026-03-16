@@ -25,23 +25,7 @@ class InterviewCreate(SQLModel):
         return to_naive_utc(v)
 
 
-class InterviewPut(SQLModel):
-    application_id: int = Field(gt=0)
-    scheduled_at: datetime
-    mode: str = Field(max_length=20)
-    location: str | None = Field(default=None, max_length=200)
-    meeting_link: str | None = Field(default=None, max_length=500)
-    result: str | None = Field(default=None, max_length=50)
-    notes: str | None = Field(default=None, max_length=2000)
-
-    @field_validator("scheduled_at")
-    @classmethod
-    def normalize_scheduled_at(cls, v: datetime) -> datetime:
-        return to_naive_utc(v)
-
-
 class InterviewPatch(SQLModel):
-    application_id: int | None = Field(default=None, gt=0)
     scheduled_at: datetime | None = None
     mode: str | None = None
     location: str | None = None

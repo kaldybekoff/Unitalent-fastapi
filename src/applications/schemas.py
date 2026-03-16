@@ -7,15 +7,8 @@ ApplicationStatus = Literal["submitted", "reviewing", "accepted", "rejected"]
 
 
 class ApplicationCreate(SQLModel):
-    candidate_id: int = Field(gt=0)
     job_id: int = Field(gt=0)
-    cover_letter: str | None = Field(default=None, max_length=5000)
-
-
-class ApplicationPut(SQLModel):
-    candidate_id: int = Field(gt=0)
-    job_id: int = Field(gt=0)
-    status: ApplicationStatus
+    resume_id: int = Field(gt=0)
     cover_letter: str | None = Field(default=None, max_length=5000)
 
 
@@ -28,6 +21,7 @@ class ApplicationRead(SQLModel):
     id: int
     candidate_id: int
     job_id: int
+    resume_id: int
     status: ApplicationStatus
     cover_letter: str | None
     created_at: datetime

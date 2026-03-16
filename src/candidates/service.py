@@ -1,87 +1,96 @@
 from datetime import datetime
 
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from src.users.models import User
+from src.exceptions.custom_exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
 
 from .models import Candidate
 from .schemas import CandidateCreate, CandidateUpdate
 
 
 async def list_candidates(session: AsyncSession, skip: int, limit: int) -> list[Candidate]:
-    res = await session.exec(select(Candidate).offset(skip).limit(limit).order_by(Candidate.id))
+    res = await session.exec(select(Candidate).order_by(Candidate.id).offset(skip).limit(limit))
     return list(res.all())
 
 
 async def get_candidate_or_404(session: AsyncSession, candidate_id: int) -> Candidate:
     candidate = await session.get(Candidate, candidate_id)
     if not candidate:
-        raise HTTPException(status_code=404, detail=f"Candidate with id {candidate_id} not found")
+        raise NotFoundException(f"Candidate with id {candidate_id} not found")
     return candidate
 
 
-async def create_candidate(session: AsyncSession, payload: CandidateCreate) -> Candidate:
+async def get_candidate_by_user_id(session: AsyncSession, user_id: int) -> Candidate | None:
+    res = await session.exec(select(Candidate).where(Candidate.user_id == user_id))
+    return res.first()
+
+
+async def create_candidate(session: AsyncSession, payload: CandidateCreate, current_user: User) -> Candidate:
+    if current_user.role != "candidate":
+        raise ForbiddenException("Only candidate users can create candidate profile")
+
+    existing = await get_candidate_by_user_id(session, current_user.id)
+    if existing:
+        raise ConflictException("Candidate profile already exists for this user")
+
     now = datetime.utcnow()
-    candidate = Candidate(**payload.model_dump(), created_at=now, updated_at=now)
+    candidate = Candidate(
+        user_id=current_user.id,
+        full_name=payload.full_name,
+        major=payload.major,
+        year=payload.year,
+        created_at=now,
+        updated_at=now,
+    )
     session.add(candidate)
-
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(status_code=409, detail="Candidate with this email already exists")
-
+    await session.commit()
     await session.refresh(candidate)
     return candidate
 
 
-async def put_candidate(session: AsyncSession, candidate_id: int, payload: CandidateCreate) -> Candidate:
-    existing = await get_candidate_or_404(session, candidate_id)
-    now = datetime.utcnow()
+async def update_candidate(
+    session: AsyncSession,
+    candidate_id: int,
+    payload: CandidateUpdate,
+    current_user: User,
+) -> Candidate:
+    candidate = await get_candidate_or_404(session, candidate_id)
 
-    existing.full_name = payload.full_name
-    existing.email = payload.email
-    existing.major = payload.major
-    existing.year = payload.year
-    existing.updated_at = now
+    if current_user.role != "admin" and candidate.user_id != current_user.id:
+        raise ForbiddenException("You can update only your own candidate profile")
 
-    session.add(existing)
-
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(status_code=409, detail="Candidate with this email already exists")
-
-    await session.refresh(existing)
-    return existing
-
-
-async def patch_candidate(session: AsyncSession, candidate_id: int, payload: CandidateUpdate) -> Candidate:
-    existing = await get_candidate_or_404(session, candidate_id)
     data = payload.model_dump(exclude_unset=True)
-
     if not data:
-        raise HTTPException(status_code=400, detail="At least one field must be provided for update")
+        raise BadRequestException("At least one field must be provided for update")
 
     for k, v in data.items():
-        setattr(existing, k, v)
+        setattr(candidate, k, v)
 
-    existing.updated_at = datetime.utcnow()
-    session.add(existing)
-
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(status_code=409, detail="Candidate with this email already exists")
-
-    await session.refresh(existing)
-    return existing
+    candidate.updated_at = datetime.utcnow()
+    session.add(candidate)
+    await session.commit()
+    await session.refresh(candidate)
+    return candidate
 
 
-async def delete_candidate(session: AsyncSession, candidate_id: int) -> None:
-    existing = await get_candidate_or_404(session, candidate_id)
-    await session.delete(existing)
+async def delete_candidate(session: AsyncSession, candidate_id: int, current_user: User) -> None:
+    candidate = await get_candidate_or_404(session, candidate_id)
+
+    if current_user.role != "admin" and candidate.user_id != current_user.id:
+        raise ForbiddenException("You can delete only your own candidate profile")
+
+    if candidate.applications:
+        raise BadRequestException("Cannot delete candidate with existing applications")
+
+    if candidate.resumes:
+        raise BadRequestException("Cannot delete candidate with existing resumes")
+
+    await session.delete(candidate)
     await session.commit()

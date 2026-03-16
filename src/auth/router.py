@@ -1,0 +1,53 @@
+from fastapi import APIRouter, Depends, Header, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from src.db.session import get_session
+from src.users.models import User
+
+from .dependencies import get_current_user
+from .schemas import LoginRequest, RefreshRequest, RegisterRequest, TokenPair, UserRead
+from .service import login_user, logout_user, refresh_user_tokens, register_user
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def api_register(
+    payload: RegisterRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    return await register_user(session, payload)
+
+
+@router.post("/login", response_model=TokenPair)
+async def api_login(
+    payload: LoginRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    _, access_token, refresh_token = await login_user(session, payload)
+    return TokenPair(access_token=access_token, refresh_token=refresh_token)
+
+
+@router.post("/refresh", response_model=TokenPair)
+async def api_refresh(
+    payload: RefreshRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    _, access_token, new_refresh_token = await refresh_user_tokens(session, payload.refresh_token)
+    return TokenPair(access_token=access_token, refresh_token=new_refresh_token)
+
+
+@router.get("/me", response_model=UserRead)
+async def api_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def api_logout(
+    authorization: str = Header(...),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    token = authorization.replace("Bearer ", "").strip()
+    await logout_user(session, current_user, token)
+    return None

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from src.candidates.models import Candidate
     from src.jobs.models import Job
     from src.interviews.models import Interview
+    from src.resumes.models import Resume
 
 
 class Application(SQLModel, table=True):
@@ -20,6 +21,7 @@ class Application(SQLModel, table=True):
 
     candidate_id: int = Field(foreign_key="candidates.id", index=True)
     job_id: int = Field(foreign_key="jobs.id", index=True)
+    resume_id: int = Field(foreign_key="resumes.id", index=True)
 
     status: str = Field(default="submitted", index=True, max_length=20)
     cover_letter: str | None = Field(default=None, max_length=5000)
@@ -33,6 +35,11 @@ class Application(SQLModel, table=True):
     )
 
     job: "Job" = Relationship(
+        back_populates="applications",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    resume: "Resume" = Relationship(
         back_populates="applications",
         sa_relationship_kwargs={"lazy": "selectin"},
     )

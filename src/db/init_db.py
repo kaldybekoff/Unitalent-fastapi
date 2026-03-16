@@ -1,8 +1,10 @@
 from sqlmodel import SQLModel
 
+import src.users.models  # noqa
 import src.candidates.models  # noqa
-import src.companies.models   # noqa
-import src.jobs.models        # noqa
+import src.companies.models  # noqa
+import src.jobs.models  # noqa
+import src.resumes.models  # noqa
 import src.applications.models  # noqa
 import src.interviews.models  # noqa
 

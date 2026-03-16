@@ -1,87 +1,118 @@
 from datetime import datetime
 
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from src.users.models import User
+from src.exceptions.custom_exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+)
 
 from .models import Company
 from .schemas import CompanyCreate, CompanyUpdate
 
 
-async def list_companies(session: AsyncSession, skip: int, limit: int) -> list[Company]:
-    res = await session.exec(select(Company).offset(skip).limit(limit).order_by(Company.id))
+async def list_companies(
+    session: AsyncSession,
+    skip: int,
+    limit: int,
+    search: str | None,
+    sort_by: str,
+    sort_order: str,
+) -> list[Company]:
+    stmt = select(Company)
+
+    if search:
+        stmt = stmt.where(Company.name.ilike(f"%{search.strip()}%"))
+
+    order_column = Company.id
+    if sort_by == "name":
+        order_column = Company.name
+    elif sort_by == "created_at":
+        order_column = Company.created_at
+
+    stmt = stmt.order_by(order_column.desc() if sort_order == "desc" else order_column.asc())
+    stmt = stmt.offset(skip).limit(limit)
+
+    res = await session.exec(stmt)
     return list(res.all())
 
 
 async def get_company_or_404(session: AsyncSession, company_id: int) -> Company:
     company = await session.get(Company, company_id)
     if not company:
-        raise HTTPException(status_code=404, detail=f"Company with id {company_id} not found")
+        raise NotFoundException(f"Company with id {company_id} not found")
     return company
 
 
-async def create_company(session: AsyncSession, payload: CompanyCreate) -> Company:
+async def create_company(session: AsyncSession, payload: CompanyCreate, current_user: User) -> Company:
+    if current_user.role not in {"recruiter", "admin"}:
+        raise ForbiddenException("Only recruiter or admin can create company")
+
     now = datetime.utcnow()
-    company = Company(**payload.model_dump(), created_at=now, updated_at=now)
+    company = Company(
+        owner_id=current_user.id,
+        name=payload.name,
+        industry=payload.industry,
+        website=payload.website,
+        created_at=now,
+        updated_at=now,
+    )
     session.add(company)
 
     try:
         await session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await session.rollback()
-        raise HTTPException(status_code=409, detail="Company with this name already exists")
+        raise ConflictException("Company with this name already exists") from exc
 
     await session.refresh(company)
     return company
 
 
-async def put_company(session: AsyncSession, company_id: int, payload: CompanyCreate) -> Company:
-    existing = await get_company_or_404(session, company_id)
-    now = datetime.utcnow()
+async def update_company(
+    session: AsyncSession,
+    company_id: int,
+    payload: CompanyUpdate,
+    current_user: User,
+) -> Company:
+    company = await get_company_or_404(session, company_id)
 
-    existing.name = payload.name
-    existing.industry = payload.industry
-    existing.website = payload.website
-    existing.updated_at = now
+    if current_user.role != "admin" and company.owner_id != current_user.id:
+        raise ForbiddenException("You can update only your own company")
 
-    session.add(existing)
-
-    try:
-        await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        raise HTTPException(status_code=409, detail="Company with this name already exists")
-
-    await session.refresh(existing)
-    return existing
-
-
-async def patch_company(session: AsyncSession, company_id: int, payload: CompanyUpdate) -> Company:
-    existing = await get_company_or_404(session, company_id)
     data = payload.model_dump(exclude_unset=True)
-
     if not data:
-        raise HTTPException(status_code=400, detail="At least one field must be provided for update")
+        raise BadRequestException("At least one field must be provided for update")
 
     for k, v in data.items():
-        setattr(existing, k, v)
+        setattr(company, k, v)
 
-    existing.updated_at = datetime.utcnow()
-
-    session.add(existing)
+    company.updated_at = datetime.utcnow()
+    session.add(company)
 
     try:
         await session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await session.rollback()
-        raise HTTPException(status_code=409, detail="Company with this name already exists")
+        raise ConflictException("Company with this name already exists") from exc
 
-    await session.refresh(existing)
-    return existing
+    await session.refresh(company)
+    return company
 
 
-async def delete_company(session: AsyncSession, company_id: int) -> None:
-    existing = await get_company_or_404(session, company_id)
-    await session.delete(existing)
+async def delete_company(session: AsyncSession, company_id: int, current_user: User) -> None:
+    company = await get_company_or_404(session, company_id)
+
+    if current_user.role != "admin" and company.owner_id != current_user.id:
+        raise ForbiddenException("You can delete only your own company")
+
+    if company.jobs:
+        raise BadRequestException("Cannot delete company with existing jobs")
+
+    await session.delete(company)
     await session.commit()
