@@ -492,7 +492,7 @@ The final ERD reflects the implemented database schema with 7 entities:
 `https://app.eraser.io/workspace/NB6doPv3jrWyH6IOifoO?origin=share`
 
 ### ERD image preview
-![UniTalent ERD](./assets/erd_png.png)
+![UniTalent ERD](./assets/UniTalent_erd.png)
 
 ### ERD code
 [Download / view ERD code](./assets/erd.txt)
