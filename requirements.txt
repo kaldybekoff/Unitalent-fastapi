@@ -9,5 +9,5 @@ sqlalchemy
 aiosqlite
 python-jose[cryptography]
 passlib[bcrypt]
-redis
+redis==4.6.0
 alembic
