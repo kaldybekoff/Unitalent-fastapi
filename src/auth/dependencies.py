@@ -6,6 +6,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.config import settings
 from src.db.session import get_session
 from src.exceptions.custom_exceptions import UnauthorizedException, ForbiddenException
+from redis.exceptions import RedisError
+
 from src.redis.client import redis_client
 from src.users.models import User
 
@@ -18,7 +20,10 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     session: AsyncSession = Depends(get_session),
 ) -> User:
-    is_blocked = await redis_client.get(f"blocklist:{token}")
+    try:
+        is_blocked = await redis_client.get(f"blocklist:{token}")
+    except RedisError:
+        is_blocked = None
     if is_blocked:
         raise UnauthorizedException("Token has been revoked")
 

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from redis.exceptions import RedisError
 from jose import JWTError, jwt
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -116,7 +117,10 @@ async def logout_user(session: AsyncSession, user: User, access_token: str) -> N
         if exp:
             ttl = int(exp - datetime.now(timezone.utc).timestamp())
             if ttl > 0:
-                await redis_client.setex(f"blocklist:{access_token}", ttl, "1")
+                try:
+                    await redis_client.setex(f"blocklist:{access_token}", ttl, "1")
+                except RedisError:
+                    pass
     except JWTError:
         pass
 
