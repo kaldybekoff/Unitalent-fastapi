@@ -1,16 +1,28 @@
 title Unitalent ERD
 candidates[icon:user,color: blue]{
   id integer (pk)
+  user_id integer (fk) unique
   full_name string
-  email string unique
   major string nullable
   year integer nullable
   created_at timestamp
   updated_at timestamp
 }
 
+users[icon: user-circle,color: purple]{
+  id integer (pk)
+  email string unique
+  hashed_password string
+  role string
+  is_active boolean
+  refresh_token string nullable
+  created_at timestamp
+  updated_at timestamp
+}
+
 companies[icon: building,color: green]{
   id integer (pk)
+  owner_id integer (fk)
   name string unique
   industry string nullable
   website string nullable
@@ -33,11 +45,25 @@ applications[icon: send,color: lightblue]{
   id integer (pk)
   candidate_id integer (fk)
   job_id integer (fk)
-  status string 
+  resume_id integer (fk)
+  status string
   cover_letter text nullable
   created_at timestamp
   updated_at timestamp
   UQ: (candidate_id,job_id)
+}
+
+resumes[icon: file-text,color: yellow]{
+  id integer (pk)
+  candidate_id integer (fk)
+  title string
+  summary text nullable
+  skills text nullable
+  education text nullable
+  experience text nullable
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
 }
 
 interviews[icon: user-check,color: orange]{
@@ -53,10 +79,11 @@ interviews[icon: user-check,color: orange]{
   updated_at timestamp
 }
 
+candidates.user_id > users.id
+companies.owner_id > users.id
 jobs.company_id > companies.id
-
+resumes.candidate_id > candidates.id
 applications.candidate_id > candidates.id
-
 applications.job_id > jobs.id
-
+applications.resume_id > resumes.id
 interviews.application_id > applications.id
