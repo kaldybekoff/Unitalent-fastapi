@@ -12,7 +12,7 @@ from src.exceptions.custom_exceptions import (
     ConflictException,
     UnauthorizedException,
 )
-from src.redis.client import redis_client
+from src.cache.client import redis_client
 
 from .schemas import LoginRequest, RegisterRequest
 from .utils import (

@@ -8,7 +8,7 @@ from src.db.session import get_session
 from src.exceptions.custom_exceptions import UnauthorizedException, ForbiddenException
 from redis.exceptions import RedisError
 
-from src.redis.client import redis_client
+from src.cache.client import redis_client
 from src.users.models import User
 
 from .service import get_user_or_none
