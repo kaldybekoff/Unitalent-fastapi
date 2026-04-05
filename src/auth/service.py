@@ -10,11 +10,13 @@ from src.users.models import User
 from src.exceptions.custom_exceptions import (
     BadRequestException,
     ConflictException,
+    NotFoundException,
     UnauthorizedException,
 )
 from src.cache.client import redis_client
 
 from .schemas import LoginRequest, RegisterRequest
+from .tokens import create_email_verification_token, create_password_reset_token, decode_token
 from .utils import (
     create_access_token,
     create_refresh_token,
@@ -46,12 +48,22 @@ async def register_user(session: AsyncSession, payload: RegisterRequest) -> User
         hashed_password=hash_password(payload.password),
         role=payload.role,
         is_active=True,
+        is_verified=False,
         created_at=now,
         updated_at=now,
     )
     session.add(user)
     await session.commit()
     await session.refresh(user)
+
+    # Fire-and-forget email verification via Celery
+    try:
+        from src.tasks.email_tasks import send_confirmation_email
+        token = create_email_verification_token(user.id)
+        send_confirmation_email.delay(user.id, user.email, token)
+    except Exception:
+        pass  # Do not block registration if Celery/email is unavailable
+
     return user
 
 
@@ -128,3 +140,56 @@ async def logout_user(session: AsyncSession, user: User, access_token: str) -> N
     user.updated_at = datetime.utcnow()
     session.add(user)
     await session.commit()
+
+
+# ── Email verification ────────────────────────────────────────────────────────
+
+async def request_email_verification(session: AsyncSession, user_id: int) -> None:
+    user = await session.get(User, user_id)
+    if not user:
+        raise NotFoundException("User not found")
+    if user.is_verified:
+        raise BadRequestException("Email is already verified")
+    token = create_email_verification_token(user.id)
+    from src.tasks.email_tasks import send_confirmation_email
+    send_confirmation_email.delay(user.id, user.email, token)
+
+
+async def verify_email(session: AsyncSession, token: str) -> User:
+    user_id = decode_token(token, expected_type="email_verify")
+    user = await session.get(User, user_id)
+    if not user:
+        raise NotFoundException("User not found")
+    if user.is_verified:
+        raise BadRequestException("Email is already verified")
+    user.is_verified = True
+    user.updated_at = datetime.utcnow()
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+# ── Password reset ────────────────────────────────────────────────────────────
+
+async def request_password_reset(session: AsyncSession, email: str) -> None:
+    user = await get_user_by_email(session, email)
+    if not user:
+        return  # Silent — prevent email enumeration
+    token = create_password_reset_token(user.id)
+    from src.tasks.email_tasks import send_password_reset_email
+    send_password_reset_email.delay(user.id, user.email, token)
+
+
+async def reset_password(session: AsyncSession, token: str, new_password: str) -> User:
+    user_id = decode_token(token, expected_type="password_reset")
+    user = await session.get(User, user_id)
+    if not user:
+        raise NotFoundException("User not found")
+    user.hashed_password = hash_password(new_password)
+    user.refresh_token = None  # Invalidate all sessions
+    user.updated_at = datetime.utcnow()
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user

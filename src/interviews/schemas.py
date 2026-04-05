@@ -10,14 +10,16 @@ def to_naive_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-class InterviewCreate(SQLModel):
-    application_id: int = Field(gt=0)
+# ── InterviewSession schemas ──────────────────────────────────────────────────
+
+class InterviewSessionCreate(SQLModel):
+    job_id: int = Field(gt=0)
     scheduled_at: datetime
     mode: str = Field(default="online", max_length=20)
     location: str | None = Field(default=None, max_length=200)
     meeting_link: str | None = Field(default=None, max_length=500)
-    result: str | None = Field(default=None, max_length=50)
     notes: str | None = Field(default=None, max_length=2000)
+    result: str | None = Field(default=None, max_length=50)
 
     @field_validator("scheduled_at")
     @classmethod
@@ -25,13 +27,13 @@ class InterviewCreate(SQLModel):
         return to_naive_utc(v)
 
 
-class InterviewPatch(SQLModel):
+class InterviewSessionPatch(SQLModel):
     scheduled_at: datetime | None = None
     mode: str | None = None
     location: str | None = None
     meeting_link: str | None = None
-    result: str | None = None
     notes: str | None = None
+    result: str | None = None
 
     @field_validator("scheduled_at")
     @classmethod
@@ -43,12 +45,28 @@ class InterviewPatch(SQLModel):
 
 class InterviewRead(SQLModel):
     id: int
+    session_id: int
     application_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class InterviewSessionRead(SQLModel):
+    id: int
+    job_id: int
     scheduled_at: datetime
     mode: str
     location: str | None
     meeting_link: str | None
-    result: str | None
     notes: str | None
+    result: str | None
     created_at: datetime
     updated_at: datetime
+    interviews: list[InterviewRead] = []
+
+
+# ── Interview (candidate slot) schemas ───────────────────────────────────────
+
+class InterviewCreate(SQLModel):
+    session_id: int = Field(gt=0)
+    application_id: int = Field(gt=0)

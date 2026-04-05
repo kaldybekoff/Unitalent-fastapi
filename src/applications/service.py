@@ -162,6 +162,21 @@ async def patch_application(
     session.add(application)
     await session.commit()
     await session.refresh(application)
+
+    # Notify candidate when status changes (background task)
+    if "status" in data and data.get("status") and data["status"] != application.status:
+        try:
+            from src.tasks.email_tasks import send_application_status_email
+            send_application_status_email.delay(
+                application.candidate.user.email,
+                application.candidate.full_name,
+                application.job.title,
+                application.job.company.name,
+                application.status,
+            )
+        except Exception:
+            pass  # Do not fail if Celery is unavailable
+
     return application
 
 

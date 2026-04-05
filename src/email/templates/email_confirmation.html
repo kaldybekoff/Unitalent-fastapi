@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Confirm your email</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2>Welcome to UniTalent!</h2>
+  <p>Hi <strong>{{ username }}</strong>,</p>
+  <p>Please confirm your email address by clicking the button below:</p>
+  <a href="{{ confirmation_url }}"
+     style="display:inline-block;padding:12px 24px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px;">
+    Verify Email
+  </a>
+  <p style="margin-top:20px;color:#6B7280;font-size:14px;">
+    Link expires in 24 hours. If you did not register, ignore this email.
+  </p>
+</body>
+</html>

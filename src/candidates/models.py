@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Column, LargeBinary
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
@@ -18,6 +19,7 @@ class Candidate(SQLModel, table=True):
     full_name: str = Field(min_length=1, max_length=120)
     major: str | None = Field(default=None, max_length=120)
     year: int | None = Field(default=None, ge=1, le=8)
+    photo: bytes | None = Field(default=None, sa_column=Column(LargeBinary, nullable=True))
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

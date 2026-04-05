@@ -16,6 +16,7 @@ class User(SQLModel, table=True):
     hashed_password: str = Field(max_length=255)
     role: str = Field(default="candidate", max_length=30, index=True)
     is_active: bool = Field(default=True, index=True)
+    is_verified: bool = Field(default=False)
 
     refresh_token: str | None = Field(default=None, max_length=1000)
 

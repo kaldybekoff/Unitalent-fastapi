@@ -11,3 +11,19 @@ python-jose[cryptography]
 passlib[bcrypt]
 redis==4.6.0
 alembic
+# Middleware / rate limiting
+fastapi-limiter==0.1.6
+# Celery
+celery==5.3.6
+flower==2.0.1
+# Email
+fastapi-mail==1.4.1
+aiosmtplib==3.0.1
+# Image processing
+Pillow==10.3.0
+# Profiling
+pyinstrument==4.6.2
+# File uploads
+python-multipart==0.0.9
+# Secure tokens
+itsdangerous==2.2.0

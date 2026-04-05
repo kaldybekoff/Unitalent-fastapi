@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from pydantic import model_validator
 from sqlmodel import SQLModel, Field
 
 
@@ -21,5 +22,13 @@ class CandidateRead(SQLModel):
     full_name: str
     major: str | None
     year: int | None
+    has_photo: bool = False
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def compute_has_photo(cls, data):
+        if hasattr(data, "photo"):
+            data.__dict__["has_photo"] = data.photo is not None
+        return data

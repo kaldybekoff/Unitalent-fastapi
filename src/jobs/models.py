@@ -6,6 +6,7 @@ from sqlmodel import SQLModel, Field, Relationship
 if TYPE_CHECKING:
     from src.companies.models import Company
     from src.applications.models import Application
+    from src.interviews.models import InterviewSession
 
 
 class Job(SQLModel, table=True):
@@ -29,6 +30,11 @@ class Job(SQLModel, table=True):
     )
 
     applications: list["Application"] = Relationship(
+        back_populates="job",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    interview_sessions: list["InterviewSession"] = Relationship(
         back_populates="job",
         sa_relationship_kwargs={"lazy": "selectin"},
     )

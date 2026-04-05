@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:jod35.github.io)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from src.main import app; print\\('OK'\\)\")",
+      "Bash(python:*)",
+      "Bash(redis-cli ping:*)",
+      "Bash(where redis-cli:*)",
+      "Bash(where redis-server:*)"
+    ]
+  }
+}

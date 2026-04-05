@@ -30,5 +30,14 @@ class UserRead(SQLModel):
     email: EmailStr
     role: str
     is_active: bool
+    is_verified: bool
     created_at: datetime
     updated_at: datetime
+
+
+class PasswordResetInitRequest(SQLModel):
+    email: EmailStr
+
+
+class PasswordResetRequest(SQLModel):
+    new_password: str = Field(min_length=6, max_length=128)

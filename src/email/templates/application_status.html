@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Application Status Update</title></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h2>Application Status Update — UniTalent</h2>
+  <p>Hi <strong>{{ candidate_name }}</strong>,</p>
+  <p>Your application for <strong>{{ job_title }}</strong> at <strong>{{ company_name }}</strong>
+     has been updated to:</p>
+  <p style="font-size:20px;font-weight:bold;color:
+    {% if new_status == 'accepted' %}#16A34A
+    {% elif new_status == 'rejected' %}#DC2626
+    {% else %}#4F46E5{% endif %}">
+    {{ new_status | upper }}
+  </p>
+  <p style="color:#6B7280;font-size:14px;">
+    Log in to UniTalent to see full details.
+  </p>
+</body>
+</html>
