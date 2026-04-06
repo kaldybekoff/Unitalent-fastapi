@@ -36,7 +36,9 @@ def compress_and_store_photo(self, candidate_id: int, raw_bytes: bytes) -> None:
 
     # ── Store in PostgreSQL (sync session, Celery workers are sync) ───────────
     try:
-        sync_url = settings.database_url.replace("+asyncpg", "")
+        sync_url = (settings.database_url
+                    .replace("+asyncpg", "")
+                    .replace("ssl=require", "sslmode=require"))
         engine = create_engine(sync_url)
         with Session(engine) as db:
             from src.candidates.models import Candidate

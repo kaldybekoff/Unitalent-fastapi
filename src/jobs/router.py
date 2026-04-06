@@ -4,6 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.dependencies import get_current_user
 from src.db.session import get_session
+from src.middleware.rate_limit import write_rate_limit
 from src.users.models import User
 from src.applications.models import Application
 from src.applications.schemas import ApplicationRead
@@ -35,7 +36,8 @@ async def api_get_job(job: Job = Depends(job_by_id)):
     return job
 
 
-@router.post("", response_model=JobRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=JobRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_create_job(
     payload: JobCreate,
     session: AsyncSession = Depends(get_session),
@@ -44,7 +46,8 @@ async def api_create_job(
     return await create_job(session, payload, current_user)
 
 
-@router.patch("/{job_id}", response_model=JobRead)
+@router.patch("/{job_id}", response_model=JobRead,
+              dependencies=[Depends(write_rate_limit())])
 async def api_patch_job(
     payload: JobUpdate,
     job: Job = Depends(job_by_id),
@@ -54,7 +57,8 @@ async def api_patch_job(
     return await update_job(session, job.id, payload, current_user)
 
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_delete_job(
     job: Job = Depends(job_by_id),
     session: AsyncSession = Depends(get_session),

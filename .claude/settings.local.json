@@ -7,7 +7,9 @@
       "Bash(python:*)",
       "Bash(redis-cli ping:*)",
       "Bash(where redis-cli:*)",
-      "Bash(where redis-server:*)"
+      "Bash(where redis-server:*)",
+      "Read(//c/Program Files/Redis/**)",
+      "Read(//c/Program Files \\(x86\\)/**)"
     ]
   }
 }

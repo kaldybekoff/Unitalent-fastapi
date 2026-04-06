@@ -4,6 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.auth.dependencies import get_current_user
 from src.db.session import get_session
 from src.exceptions.custom_exceptions import ForbiddenException
+from src.middleware.rate_limit import write_rate_limit
 from src.users.models import User
 
 from .dependencies import interview_by_id, session_by_id
@@ -65,7 +66,8 @@ async def api_get_session(
     raise ForbiddenException("You do not have permission for this action")
 
 
-@router.post("/interview-sessions", response_model=InterviewSessionRead, status_code=status.HTTP_201_CREATED)
+@router.post("/interview-sessions", response_model=InterviewSessionRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_create_session(
     payload: InterviewSessionCreate,
     db: AsyncSession = Depends(get_session),
@@ -74,7 +76,8 @@ async def api_create_session(
     return await create_session(db, payload, current_user)
 
 
-@router.patch("/interview-sessions/{session_id}", response_model=InterviewSessionRead)
+@router.patch("/interview-sessions/{session_id}", response_model=InterviewSessionRead,
+              dependencies=[Depends(write_rate_limit())])
 async def api_patch_session(
     payload: InterviewSessionPatch,
     interview_session: InterviewSession = Depends(session_by_id),
@@ -84,7 +87,8 @@ async def api_patch_session(
     return await patch_session(db, interview_session.id, payload, current_user)
 
 
-@router.delete("/interview-sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/interview-sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_delete_session(
     interview_session: InterviewSession = Depends(session_by_id),
     db: AsyncSession = Depends(get_session),
@@ -131,7 +135,8 @@ async def api_get_interview(
     raise ForbiddenException("You do not have permission for this action")
 
 
-@router.post("/interviews", response_model=InterviewRead, status_code=status.HTTP_201_CREATED)
+@router.post("/interviews", response_model=InterviewRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_add_candidate_to_session(
     payload: InterviewCreate,
     db: AsyncSession = Depends(get_session),
@@ -140,7 +145,8 @@ async def api_add_candidate_to_session(
     return await add_candidate_to_session(db, payload, current_user)
 
 
-@router.delete("/interviews/{interview_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/interviews/{interview_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_remove_candidate_from_session(
     interview: Interview = Depends(interview_by_id),
     db: AsyncSession = Depends(get_session),

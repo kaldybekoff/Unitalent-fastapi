@@ -4,6 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.dependencies import get_current_user
 from src.db.session import get_session
+from src.middleware.rate_limit import write_rate_limit
 from src.users.models import User
 from src.interviews.models import Interview
 from src.interviews.schemas import InterviewRead
@@ -57,7 +58,8 @@ async def api_get_application(
     raise ForbiddenException("You do not have permission for this action")
 
 
-@router.post("", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ApplicationRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_create_application(
     payload: ApplicationCreate,
     session: AsyncSession = Depends(get_session),
@@ -66,7 +68,8 @@ async def api_create_application(
     return await create_application(session, payload, current_user)
 
 
-@router.patch("/{app_id}", response_model=ApplicationRead)
+@router.patch("/{app_id}", response_model=ApplicationRead,
+              dependencies=[Depends(write_rate_limit())])
 async def api_patch_application(
     payload: ApplicationPatch,
     application: Application = Depends(application_by_id),
@@ -76,7 +79,8 @@ async def api_patch_application(
     return await patch_application(session, application.id, payload, current_user)
 
 
-@router.delete("/{app_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{app_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_delete_application(
     application: Application = Depends(application_by_id),
     session: AsyncSession = Depends(get_session),

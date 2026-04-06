@@ -33,7 +33,8 @@ async def api_get_candidate(candidate: Candidate = Depends(candidate_by_id)):
     return candidate
 
 
-@router.post("", response_model=CandidateRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CandidateRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_create_candidate(
     payload: CandidateCreate,
     session: AsyncSession = Depends(get_session),
@@ -42,7 +43,8 @@ async def api_create_candidate(
     return await create_candidate(session, payload, current_user)
 
 
-@router.patch("/{candidate_id}", response_model=CandidateRead)
+@router.patch("/{candidate_id}", response_model=CandidateRead,
+              dependencies=[Depends(write_rate_limit())])
 async def api_patch_candidate(
     payload: CandidateUpdate,
     candidate: Candidate = Depends(candidate_by_id),
@@ -52,7 +54,8 @@ async def api_patch_candidate(
     return await update_candidate(session, candidate.id, payload, current_user)
 
 
-@router.delete("/{candidate_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{candidate_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_delete_candidate(
     candidate: Candidate = Depends(candidate_by_id),
     session: AsyncSession = Depends(get_session),

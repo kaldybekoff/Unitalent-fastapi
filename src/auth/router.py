@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Header, Path, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.session import get_session
+from src.middleware.rate_limit import write_rate_limit
 from src.users.models import User
 
 from .dependencies import get_current_user
@@ -28,7 +29,8 @@ from .service import (
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_register(
     payload: RegisterRequest,
     session: AsyncSession = Depends(get_session),
@@ -36,7 +38,8 @@ async def api_register(
     return await register_user(session, payload)
 
 
-@router.post("/login", response_model=TokenPair)
+@router.post("/login", response_model=TokenPair,
+             dependencies=[Depends(write_rate_limit())])
 async def api_login(
     payload: LoginRequest,
     session: AsyncSession = Depends(get_session),
@@ -45,7 +48,8 @@ async def api_login(
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/refresh", response_model=TokenPair)
+@router.post("/refresh", response_model=TokenPair,
+             dependencies=[Depends(write_rate_limit())])
 async def api_refresh(
     payload: RefreshRequest,
     session: AsyncSession = Depends(get_session),
@@ -59,7 +63,8 @@ async def api_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT,
+             dependencies=[Depends(write_rate_limit())])
 async def api_logout(
     authorization: str = Header(...),
     current_user: User = Depends(get_current_user),
@@ -72,7 +77,8 @@ async def api_logout(
 
 # ── Email verification ────────────────────────────────────────────────────────
 
-@router.post("/request-verification", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/request-verification", status_code=status.HTTP_204_NO_CONTENT,
+             dependencies=[Depends(write_rate_limit())])
 async def api_request_verification(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -82,7 +88,8 @@ async def api_request_verification(
     return None
 
 
-@router.post("/verify-email/{token}", response_model=UserRead)
+@router.post("/verify-email/{token}", response_model=UserRead,
+             dependencies=[Depends(write_rate_limit())])
 async def api_verify_email(
     token: str = Path(...),
     session: AsyncSession = Depends(get_session),
@@ -93,7 +100,8 @@ async def api_verify_email(
 
 # ── Password reset ────────────────────────────────────────────────────────────
 
-@router.post("/request-password-reset", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/request-password-reset", status_code=status.HTTP_204_NO_CONTENT,
+             dependencies=[Depends(write_rate_limit())])
 async def api_request_password_reset(
     payload: PasswordResetInitRequest,
     session: AsyncSession = Depends(get_session),
@@ -103,7 +111,8 @@ async def api_request_password_reset(
     return None
 
 
-@router.post("/reset-password/{token}", response_model=UserRead)
+@router.post("/reset-password/{token}", response_model=UserRead,
+             dependencies=[Depends(write_rate_limit())])
 async def api_reset_password(
     payload: PasswordResetRequest,
     token: str = Path(...),

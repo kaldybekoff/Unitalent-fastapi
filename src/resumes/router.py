@@ -3,6 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.auth.dependencies import get_current_user
 from src.db.session import get_session
+from src.middleware.rate_limit import write_rate_limit
 from src.users.models import User
 
 from .dependencies import resume_by_id
@@ -28,7 +29,8 @@ async def api_get_resume(resume: Resume = Depends(resume_by_id)):
     return resume
 
 
-@router.post("", response_model=ResumeRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ResumeRead, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(write_rate_limit())])
 async def api_create_resume(
     payload: ResumeCreate,
     session: AsyncSession = Depends(get_session),
@@ -37,7 +39,8 @@ async def api_create_resume(
     return await create_resume(session, payload, current_user)
 
 
-@router.patch("/{resume_id}", response_model=ResumeRead)
+@router.patch("/{resume_id}", response_model=ResumeRead,
+              dependencies=[Depends(write_rate_limit())])
 async def api_patch_resume(
     payload: ResumeUpdate,
     resume: Resume = Depends(resume_by_id),
@@ -47,7 +50,8 @@ async def api_patch_resume(
     return await update_resume(session, resume.id, payload, current_user)
 
 
-@router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT,
+               dependencies=[Depends(write_rate_limit())])
 async def api_delete_resume(
     resume: Resume = Depends(resume_by_id),
     session: AsyncSession = Depends(get_session),

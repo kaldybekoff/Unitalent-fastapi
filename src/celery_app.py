@@ -6,6 +6,10 @@ celery_app = Celery(
     "unitalent",
     broker=settings.redis_url,
     backend=settings.redis_url,
+    include=[
+        "src.tasks.image_tasks",
+        "src.tasks.email_tasks",
+    ],
 )
 
 celery_app.conf.update(
@@ -15,5 +19,3 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
 )
-
-celery_app.autodiscover_tasks(["src.tasks"])

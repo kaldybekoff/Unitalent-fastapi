@@ -158,13 +158,17 @@ async def patch_application(
     else:
         raise ForbiddenException("You do not have permission for this action")
 
+    # Capture new status before commit — after refresh it equals application.status,
+    # so the comparison data["status"] != application.status would always be False.
+    new_status = data.get("status") if "status" in data else None
+
     application.updated_at = datetime.utcnow()
     session.add(application)
     await session.commit()
     await session.refresh(application)
 
     # Notify candidate when status changes (background task)
-    if "status" in data and data.get("status") and data["status"] != application.status:
+    if new_status:
         try:
             from src.tasks.email_tasks import send_application_status_email
             send_application_status_email.delay(
@@ -172,7 +176,7 @@ async def patch_application(
                 application.candidate.full_name,
                 application.job.title,
                 application.job.company.name,
-                application.status,
+                new_status,
             )
         except Exception:
             pass  # Do not fail if Celery is unavailable
