@@ -12,7 +12,8 @@ passlib[bcrypt]
 redis==4.6.0
 alembic
 # Middleware / rate limiting
-fastapi-limiter==0.1.6
+fastapi-limiter==0.2.0
+pyrate-limiter
 # Celery
 celery==5.3.6
 flower==2.0.1

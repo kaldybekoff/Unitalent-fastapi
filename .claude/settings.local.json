@@ -9,7 +9,8 @@
       "Bash(where redis-cli:*)",
       "Bash(where redis-server:*)",
       "Read(//c/Program Files/Redis/**)",
-      "Read(//c/Program Files \\(x86\\)/**)"
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(pip show:*)"
     ]
   }
 }

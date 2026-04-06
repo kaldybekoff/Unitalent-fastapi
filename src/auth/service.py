@@ -56,13 +56,14 @@ async def register_user(session: AsyncSession, payload: RegisterRequest) -> User
     await session.commit()
     await session.refresh(user)
 
-    # Fire-and-forget email verification via Celery
-    try:
-        from src.tasks.email_tasks import send_confirmation_email
-        token = create_email_verification_token(user.id)
-        send_confirmation_email.delay(user.id, user.email, token)
-    except Exception:
-        pass  # Do not block registration if Celery/email is unavailable
+    # Fire-and-forget email verification via Celery (candidates only)
+    if user.role == "candidate":
+        try:
+            from src.tasks.email_tasks import send_confirmation_email
+            token = create_email_verification_token(user.id)
+            send_confirmation_email.delay(user.id, user.email, token)
+        except Exception:
+            pass  # Do not block registration if Celery/email is unavailable
 
     return user
 

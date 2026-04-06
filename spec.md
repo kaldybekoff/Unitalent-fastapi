@@ -135,10 +135,7 @@ Start the worker:
 celery -A src.celery_app worker --loglevel=info --pool=solo
 ```
 
-Monitor with Flower:
-```bash
-celery -A src.celery_app flower --port=5555
-```
+
 
 ---
 
@@ -247,17 +244,44 @@ ACCEPTED
 
 ---
 
-## Database Changes (Alembic migrations)
+## 3. Demo Run & Bug Fixes (2026-04-06)
 
-I made several migrations along the way:
+### 3a. End-to-End Demo Walkthrough
 
-| Migration | Changes |
-|---|---|
-| `b3e1f2a4c5d6` | Added `interview_sessions` table, restructured `interviews` table |
-| `e1f2a3b4c5d6` | Added `users.is_verified BOOLEAN`, added `candidates.photo_url VARCHAR` |
-| `f2a3b4c5d6e7` | Dropped `candidates.photo_url`, added `candidates.photo BYTEA` |
+The full system was tested manually via Postman using the following environment variables:
 
-To apply all migrations:
-```bash
-alembic upgrade head
-```
+| Variable        | Value                  |
+|-----------------|------------------------|
+| base_url        | http://localhost:8000  |
+| candidate_token | (set after login)      |
+| recruiter_token | (set after login)      |
+
+Three terminals were running simultaneously:
+- **Terminal 1** — FastAPI server: `uvicorn src.main:app --reload`
+- **Terminal 2** — Celery worker: `celery -A src.celery_app worker --loglevel=info --pool=solo`
+- **Terminal 3** — Log monitoring: `tail -f logs/app.log`
+
+**Steps completed:**
+
+1. `GET /` → 200 `{"message": "UniTalent Recruitment System API"}`
+2. `POST /auth/register` with `role: candidate` → 201, verification email sent to real inbox
+3. `POST /auth/register` with `role: recruiter` → 201, no email sent (by design)
+4. `POST /auth/login` for both users → access tokens saved to Postman variables
+5. `POST /auth/verify-email/{token}` → `is_verified: true`
+6. `POST /auth/request-password-reset` → 204, reset email delivered
+7. `POST /auth/reset-password/{token}` → 200, password updated, sessions invalidated
+8. Rate limit test via Postman Collection Runner (35 iterations on `GET /`) → first 30 returned 200, from request 31 onwards → 429
+9. Confirmed `logs/app.log` contains lines with format: `IP - METHOD - PATH - STATUS - Xms`
+10. `POST /candidates` (candidate token) → candidate profile created
+11. `POST /companies` (recruiter token) → company created
+12. `POST /jobs` (recruiter token) → job vacancy created
+13. `POST /resumes` (candidate token) → resume created (hit 429 initially — waited 1 minute for rate limit reset)
+14. `POST /candidates/1/photo` (form-data, .jpg file) → 202, Celery compressed and stored photo
+15. `POST /applications` → application submitted
+16. `PATCH /applications/1` `{"status": "reviewing"}` → email sent to candidate
+17. `PATCH /applications/1` `{"status": "accepted"}` → email sent to candidate
+
+All 17 checklist items passed successfully.
+
+---
+

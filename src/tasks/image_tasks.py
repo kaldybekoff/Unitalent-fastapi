@@ -1,3 +1,4 @@
+import base64
 import io
 
 from PIL import Image
@@ -9,13 +10,14 @@ from src.config import settings
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=30)
-def compress_and_store_photo(self, candidate_id: int, raw_bytes: bytes) -> None:
+def compress_and_store_photo(self, candidate_id: int, raw_b64: str) -> None:
     """
     Compress the uploaded image with Pillow and store the binary
     directly in PostgreSQL (candidates.photo BYTEA).
 
     Logs image size before and after compression.
     """
+    raw_bytes = base64.b64decode(raw_b64)
     original_size = len(raw_bytes)
     print(f"[photo] candidate={candidate_id} | original size: {original_size} bytes "
           f"({original_size / 1024:.1f} KB)")

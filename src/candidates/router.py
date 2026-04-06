@@ -104,7 +104,8 @@ async def api_upload_photo(
     if len(raw) > max_size:
         raise BadRequestException("File size exceeds 5 MB limit")
 
+    import base64
     from src.tasks.image_tasks import compress_and_store_photo
-    compress_and_store_photo.delay(candidate.id, raw)
+    compress_and_store_photo.delay(candidate.id, base64.b64encode(raw).decode())
 
     return {"message": "Photo upload accepted — compression and storage are processing in background"}
